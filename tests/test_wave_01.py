@@ -244,6 +244,9 @@ def test_delete_task_not_found(client):
     # raise Exception("Complete test with assertion about response body")
 
     assert db.session.scalars(db.select(Task)).all() == []
+    assert response_body == {
+        "message": "task 1 is not found"
+    }
 
 
 # @pytest.mark.skip(reason="No way to test this feature yet")
