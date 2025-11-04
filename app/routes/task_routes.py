@@ -1,6 +1,7 @@
 from flask import Blueprint, make_response, abort, request, Response
 from app.models.task import Task
 from ..db import db
+from datetime import datetime
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 
@@ -9,15 +10,12 @@ def create_task():
     request_body = request.get_json()
 
     try: 
-        title = request_body["title"]
-        description = request_body["description"]
-        # completed_at = request_body["completed_at"]
+        new_task = Task.from_dict(request_body)
 
     except KeyError:
         response = {"details": "Invalid data"}
         abort(make_response(response, 400)) 
     
-    new_task = Task(title=title, description=description)
     db.session.add(new_task)
     db.session.commit()
 
@@ -32,7 +30,21 @@ def create_task():
 
 @tasks_bp.get("")
 def get_all_tasks():
-    query = db.select(Task).order_by(Task.id)
+    query = db.select(Task)
+
+    title_param = request.args.get("title")
+    if title_param:
+        query = query.where(Task.title.ilike(f"%{title_param}%"))
+    
+    # else:
+    sort_order = request.args.get("sort", "asc")
+
+    if sort_order == "desc":
+        query = query.order_by(Task.title.desc())
+    else:
+        query = query.order_by(Task.title.asc())
+            # query = query.order_by(Task.title)
+
     tasks = db.session.scalars(query)
 
     task_dict = []
@@ -66,10 +78,33 @@ def update_task(task_id):
 
     task.title = request_body["title"]
     task.description = request_body["description"]
-    # task.is_complete = request_body["is_complete"] # required
+    
     db.session.commit()
 
     return Response(status=204, mimetype="application/json")
+
+
+@tasks_bp.patch("/<task_id>/mark_complete")
+def mark_complete_task(task_id):
+    task = validate_task(task_id)
+
+    task.completed_at = datetime.now()
+    
+    db.session.commit()
+
+    return Response(status=204, mimetype="application/json")
+
+
+@tasks_bp.patch("/<task_id>/mark_incomplete")
+def mark_incomplete_task(task_id):
+    task = validate_task(task_id)
+
+    task.completed_at = None
+    
+    db.session.commit()
+
+    return Response(status=204, mimetype="application/json")
+
 
 @tasks_bp.delete("/<task_id>")
 def delete_task(task_id):
