@@ -4,6 +4,7 @@ from ..db import db
 from datetime import datetime
 import requests
 import os
+from .route_utilities import validate_model
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 
@@ -64,7 +65,7 @@ def get_all_tasks():
 @tasks_bp.get("/<task_id>")
 def get_one_task(task_id):
 
-    task = validate_task(task_id)
+    task = validate_model(Task, task_id)
     
     return {
         "id": task.id,
@@ -75,7 +76,7 @@ def get_one_task(task_id):
 
 @tasks_bp.put("/<task_id>")
 def update_task(task_id):
-    task = validate_task(task_id)
+    task = validate_model(Task, task_id)
     request_body = request.get_json()
 
     task.title = request_body["title"]
@@ -88,7 +89,7 @@ def update_task(task_id):
 
 @tasks_bp.patch("/<task_id>/mark_complete")
 def mark_complete_task(task_id):
-    task = validate_task(task_id)
+    task = validate_model(Task, task_id)
 
     task.completed_at = datetime.now()
     
@@ -112,7 +113,7 @@ def mark_complete_task(task_id):
 
 @tasks_bp.patch("/<task_id>/mark_incomplete")
 def mark_incomplete_task(task_id):
-    task = validate_task(task_id)
+    task = validate_model(Task, task_id)
 
     task.completed_at = None
     
@@ -123,7 +124,7 @@ def mark_incomplete_task(task_id):
 
 @tasks_bp.delete("/<task_id>")
 def delete_task(task_id):
-    task = validate_task(task_id)
+    task = validate_model(Task, task_id)
 
     db.session.delete(task)
     db.session.commit()
@@ -131,19 +132,19 @@ def delete_task(task_id):
     return Response(status=204, mimetype="application/jason")
 
 
-def validate_task(task_id):
-    try:
-        task_id = int(task_id)
+# def validate_task(task_id):
+#     try:
+#         task_id = int(task_id)
 
-    except ValueError:
-        response = {"message": f"task {task_id} is invalid"}
-        abort(make_response(response, 400))
+#     except ValueError:
+#         response = {"message": f"task {task_id} is invalid"}
+#         abort(make_response(response, 400))
     
-    query = db.select(Task).where(Task.id == task_id)
-    task = db.session.scalar(query)
+#     query = db.select(Task).where(Task.id == task_id)
+#     task = db.session.scalar(query)
 
-    if not task:
-        response= {"message": f"task {task_id} is not found"}
-        abort(make_response(response, 404))
+#     if not task:
+#         response= {"message": f"task {task_id} is not found"}
+#         abort(make_response(response, 404))
 
-    return task
+#     return task
