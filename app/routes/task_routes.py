@@ -94,10 +94,10 @@ def mark_complete_task(task_id):
     
     db.session.commit()
 
+    # --- send message to slack channel ---
     url = "https://slack.com/api/chat.postMessage"
-
     data = {
-        "text": "Someone just completed the task My Beautiful Task😺",
+        "text": f"Someone just completed the task {task.title}😺",
         "channel": "test-slack-api"
     }
     headers = {
@@ -106,7 +106,7 @@ def mark_complete_task(task_id):
     }
 
     requests.post(url, headers=headers, json=data)
-
+    # -----------------------------------
     return Response(status=204, mimetype="application/json")
 
 
