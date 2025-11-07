@@ -1,4 +1,4 @@
-from flask import abort, make_response
+from flask import abort, make_response, request
 from ..db import db
 
 def validate_model(cls, model_id):
@@ -24,7 +24,7 @@ def create_model(cls, model_data):
         new_model = cls.from_dict(model_data)
     
     except KeyError as error:
-        response = {"message": f"Invalid request: missing {error.args[0]}"}
+        response = {"details": f"Invalid data"}
         abort(make_response(response, 400))
 
     db.session.add(new_model)
@@ -33,14 +33,21 @@ def create_model(cls, model_data):
     return new_model.to_dict(), 201
 
 
-# def get_models_with_filters(cls, filters=None):
-#     query = db.select(cls)
-    
-#     if filters:
-#         for attribute, value in filters.items():
-#             if hasattr(cls, attribute):
-#                 query = query.where(getattr(cls, attribute).ilike(f"%{value}%"))
+def get_models_with_filters(cls, filters=None):
+    query = db.select(cls)
 
-#     models = db.session.scalars(query.order_by(cls.id))
-#     models_response = [model.to_dict() for model in models]
-#     return models_response
+    if filters:
+        for attribute, value in filters.items():
+            if hasattr(cls, attribute):
+                query = query.where(getattr(cls, attribute).ilike(f"%{value}%"))
+
+            if attribute == "sort":
+                if value == "desc":
+                    query = query.order_by(cls.title.desc())
+                elif value == "asc":
+                    query = query.order_by(cls.title.asc())    
+
+    models = db.session.scalars(query.order_by(cls.id))
+    models_response = [model.to_dict() for model in models]
+    
+    return models_response

@@ -17,7 +17,7 @@ class Goal(db.Model):
         } 
         return goal_dict
 
-    @classmethod # uses when request body from postman
+    @classmethod
     def from_dict(cls, data):
 
         new_goal = cls(title=data["title"])
